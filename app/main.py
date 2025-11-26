@@ -89,6 +89,71 @@ async def health_check():
     }
 
 
+@app.get("/debug/google-maps", tags=["Debug"])
+async def debug_google_maps():
+    """Debug endpoint to test Google Maps API configuration."""
+    if not google_maps_service:
+        return {
+            "error": "Google Maps service not initialized",
+            "api_key_configured": settings.is_google_maps_configured,
+            "api_key_length": len(settings.google_maps_api_key) if settings.google_maps_api_key else 0,
+        }
+    
+    # Try a simple test query
+    try:
+        import httpx
+        test_params = {
+            "query": "restaurant in New York",
+            "key": settings.google_maps_api_key,
+            "type": "restaurant",
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                f"{settings.google_maps_api_base_url}/textsearch/json",
+                params=test_params
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            result = {
+                "status": "success" if data.get("status") == "OK" else "error",
+                "api_response_status": data.get("status"),
+                "error_message": data.get("error_message"),
+                "error_details": data.get("error_details"),
+                "api_key_configured": True,
+                "api_key_length": len(settings.google_maps_api_key),
+                "api_key_prefix": settings.google_maps_api_key[:10] + "..." if len(settings.google_maps_api_key) > 10 else "N/A",
+                "full_response": data,
+            }
+            
+            # Add troubleshooting guidance for REQUEST_DENIED billing errors
+            if data.get("status") == "REQUEST_DENIED" and "billing" in data.get("error_message", "").lower():
+                result["troubleshooting"] = {
+                    "most_likely_cause": "API key belongs to a different project than the one with billing enabled",
+                    "steps": [
+                        "1. Go to https://console.cloud.google.com/apis/credentials",
+                        "2. Click on your API key (the name, not the key value)",
+                        "3. Note which Project this API key belongs to",
+                        "4. Go to https://console.cloud.google.com/billing",
+                        "5. Verify that SAME project has billing enabled",
+                        "6. If billing is on a different project, either:",
+                        "   - Enable billing on the API key's project, OR",
+                        "   - Create a new API key in the project with billing enabled"
+                    ],
+                    "see_also": "Check TROUBLESHOOTING_BILLING.md for detailed steps"
+                }
+            
+            return result
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "api_key_configured": settings.is_google_maps_configured,
+            "api_key_length": len(settings.google_maps_api_key) if settings.google_maps_api_key else 0,
+        }
+
+
 @app.get(
     "/restaurants/search",
     response_model=SearchResponse,

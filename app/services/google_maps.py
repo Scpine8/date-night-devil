@@ -77,7 +77,32 @@ class GoogleMapsService:
             # Check for API errors
             if data.get("status") != "OK" and data.get("status") != "ZERO_RESULTS":
                 error_message = data.get("error_message", "Unknown Google Maps API error")
-                raise GoogleMapsAPIError(f"Google Maps API error: {data.get('status')} - {error_message}")
+                status = data.get("status", "UNKNOWN")
+                error_details = data.get("error_details", [])
+                
+                # Build detailed error message
+                error_info = f"Status: {status}\nError Message: {error_message}"
+                
+                # Add error details if available
+                if error_details:
+                    error_info += f"\nError Details: {error_details}"
+                
+                # Provide helpful message for REQUEST_DENIED errors
+                if status == "REQUEST_DENIED":
+                    troubleshooting = "\n\nTroubleshooting steps:\n"
+                    troubleshooting += "1. Verify billing is enabled: https://console.cloud.google.com/project/_/billing/enable\n"
+                    troubleshooting += "2. Check that Places API is enabled: https://console.cloud.google.com/apis/library/places-backend.googleapis.com\n"
+                    troubleshooting += "3. Verify your API key is valid and not expired\n"
+                    troubleshooting += "4. Check API key restrictions:\n"
+                    troubleshooting += "   - If restricted by API, ensure 'Places API' is included\n"
+                    troubleshooting += "   - If restricted by IP/HTTP referrer, ensure your server IP/domain is allowed\n"
+                    troubleshooting += "5. Verify the API key belongs to the correct project\n"
+                    troubleshooting += "6. Check API quotas haven't been exceeded\n"
+                    troubleshooting += "\nFull API response: " + str(data)
+                    
+                    raise GoogleMapsAPIError(f"Google Maps API error: {status}\n{error_info}{troubleshooting}")
+                
+                raise GoogleMapsAPIError(f"Google Maps API error: {status} - {error_info}")
 
             # Parse results
             restaurants = []
