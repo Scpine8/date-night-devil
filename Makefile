@@ -1,4 +1,4 @@
-.PHONY: help install start dev stop test lint format clean
+.PHONY: help install start dev stop test lint format format-check clean
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -22,11 +22,14 @@ stop: ## Stop the server (if running in background)
 test: ## Run tests (placeholder for future test suite)
 	@echo "Tests not yet implemented"
 
-lint: ## Run linters (placeholder)
-	@echo "Linting not yet configured"
+lint: ## Run Ruff linter
+	ruff check .
 
-format: ## Format code with black (if installed)
-	@echo "Formatting not yet configured"
+format: ## Format code with Ruff
+	ruff format .
+
+format-check: ## Check if code is formatted correctly (CI-friendly)
+	ruff format --check .
 
 clean: ## Clean Python cache files
 	find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
