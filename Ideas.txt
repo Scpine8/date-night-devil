@@ -2,3 +2,25 @@ Ideas:
 
 - Allow users to see if their friends rated the restaurants well or approved of them. Combined with Belli?
 - Allow customers to flag certain dishes at the restaurant as worth going for.
+
+
+V0: (POC)
+- Users can search based on multiple criteria
+- Restaurant results appear in a table, limit of 20
+- Users can click the inline restaurant and the google maps link opens in a new tab.
+
+V0.5: (POC)
+- ...V0
+- When users click an inline restaurant, a drawer opens with more information on the restaurant, including a hyperlink to the google page.
+- Pagination to allow for more responses
+
+
+V1: (alpha)
+- ...V0.05
+- Logging to track user queries
+- Sorting on table columns (e.g. rating, reviews count, price level)
+
+
+V2:
+- ...V1
+- Natural language search, where users can write what they're looking for in plain english and a useful query is executed.

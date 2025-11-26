@@ -29,6 +29,7 @@ class GoogleMapsService:
         price_level: Optional[int] = None,
         open_now: Optional[bool] = None,
         radius: Optional[int] = None,
+        country: Optional[str] = None,
     ) -> list[Restaurant]:
         """
         Search for restaurants using Google Places API Text Search.
@@ -41,6 +42,7 @@ class GoogleMapsService:
             price_level: Optional price level filter (0-4)
             open_now: Optional filter for currently open restaurants
             radius: Optional search radius in meters
+            country: Optional ISO 3166-1 Alpha-2 country code to bias results
 
         Returns:
             List of Restaurant objects matching the criteria
@@ -60,10 +62,13 @@ class GoogleMapsService:
         }
 
         if radius:
-            params["radius"] = radius
+            params["radius"] = str(radius)
 
         if open_now:
             params["opennow"] = "true"
+
+        if country:
+            params["region"] = country.lower()
 
         try:
             # Make the API call
@@ -165,6 +170,47 @@ class GoogleMapsService:
             opening_hours=place_data.get("opening_hours"),
             website=place_data.get("website"),
             phone_number=place_data.get("formatted_phone_number"),
+            dine_in=place_data.get("dine_in"),
+            takeout=place_data.get("takeout"),
+            delivery=place_data.get("delivery"),
+            curbside_pickup=place_data.get("curbside_pickup"),
+            reservable=place_data.get("reservable"),
+            serves_breakfast=place_data.get("serves_breakfast"),
+            serves_lunch=place_data.get("serves_lunch"),
+            serves_dinner=place_data.get("serves_dinner"),
+            serves_brunch=place_data.get("serves_brunch"),
+            serves_beer=place_data.get("serves_beer"),
+            serves_wine=place_data.get("serves_wine"),
+            serves_cocktails=place_data.get("serves_cocktails"),
+            serves_coffee=place_data.get("serves_coffee"),
+            serves_vegetarian_food=place_data.get("serves_vegetarian_food"),
+            serves_dessert=place_data.get("serves_dessert"),
+            outdoor_seating=place_data.get("outdoor_seating"),
+            live_music=place_data.get("live_music"),
+            good_for_children=place_data.get("good_for_children"),
+            good_for_groups=place_data.get("good_for_groups"),
+            good_for_watching_sports=place_data.get("good_for_watching_sports"),
+            allows_dogs=place_data.get("allows_dogs"),
+            restroom=place_data.get("restroom"),
+            menu_for_children=place_data.get("menu_for_children"),
+            parking_options=place_data.get("parking_options"),
+            payment_options=place_data.get("payment_options"),
+            google_maps_uri=place_data.get("google_maps_uri"),
+            icon_mask_base_uri=place_data.get("icon_mask_base_uri"),
+            utc_offset_minutes=place_data.get("utc_offset_minutes"),
+            current_opening_hours=place_data.get("current_opening_hours"),
+            regular_opening_hours=place_data.get("regular_opening_hours"),
+            generative_summary=place_data.get("generative_summary"),
+            editorial_summary=place_data.get("editorial_summary"),
+            reviews=place_data.get("reviews"),
+            review_summary=place_data.get("review_summary"),
+            price_range=place_data.get("price_range"),
+            international_phone_number=place_data.get("international_phone_number"),
+            national_phone_number=place_data.get("national_phone_number"),
+            plus_code=place_data.get("plus_code"),
+            viewport=place_data.get("viewport"),
+            address_components=place_data.get("address_components"),
+            adr_format_address=place_data.get("adr_format_address"),
         )
 
     def _matches_filters(

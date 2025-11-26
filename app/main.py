@@ -2,6 +2,7 @@
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
@@ -43,6 +44,20 @@ app = FastAPI(
     description="Fast API service for advanced restaurant search using Google Maps",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -192,6 +207,12 @@ async def search_restaurants(
     radius: int | None = Query(
         None, ge=1, le=50000, description="Search radius in meters (max 50000)"
     ),
+    country: str | None = Query(
+        None,
+        description="ISO 3166-1 Alpha-2 country code (e.g., 'us', 'uk', 'fr') to bias search results",
+        min_length=2,
+        max_length=2,
+    ),
 ):
     """
     Search for restaurants with advanced filtering options.
@@ -203,6 +224,7 @@ async def search_restaurants(
     - **price_level**: Optional. Price level filter (0-4)
     - **open_now**: Optional. Only return restaurants currently open
     - **radius**: Optional. Search radius in meters (max 50000)
+    - **country**: Optional. ISO 3166-1 Alpha-2 country code to bias search results
     """
     if not google_maps_service:
         raise HTTPException(
@@ -220,6 +242,7 @@ async def search_restaurants(
             price_level=price_level,
             open_now=open_now,
             radius=radius,
+            country=country,
         )
 
         # Perform search
@@ -231,6 +254,7 @@ async def search_restaurants(
             price_level=search_request.price_level,
             open_now=search_request.open_now,
             radius=search_request.radius,
+            country=search_request.country,
         )
 
         return SearchResponse(

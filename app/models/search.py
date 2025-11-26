@@ -32,6 +32,12 @@ class RestaurantSearchRequest(BaseModel):
     radius: Optional[int] = Field(
         None, ge=1, le=50000, description="Search radius in meters (max 50000)"
     )
+    country: Optional[str] = Field(
+        None,
+        description="ISO 3166-1 Alpha-2 country code (e.g., 'us', 'uk', 'fr') to bias search results",
+        min_length=2,
+        max_length=2,
+    )
 
     @field_validator("location")
     @classmethod
@@ -40,3 +46,11 @@ class RestaurantSearchRequest(BaseModel):
         if not v or not v.strip():
             raise ValueError("Location cannot be empty")
         return v.strip()
+
+    @field_validator("country")
+    @classmethod
+    def validate_country(cls, v: Optional[str]) -> Optional[str]:
+        """Validate country code is lowercase if provided."""
+        if v:
+            return v.lower()
+        return v
