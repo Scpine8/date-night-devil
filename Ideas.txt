@@ -1,0 +1,4 @@
+Ideas:
+
+- Allow users to see if their friends rated the restaurants well or approved of them. Combined with Belli?
+- Allow customers to flag certain dishes at the restaurant as worth going for.
