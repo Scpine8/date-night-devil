@@ -93,3 +93,6 @@ class SearchResponse(BaseModel):
     )
     total_results: int = Field(..., description="Total number of results found")
     query: dict = Field(..., description="Query parameters used for search")
+    next_page_token: Optional[str] = Field(
+        None, description="Token to fetch the next page of results"
+    )

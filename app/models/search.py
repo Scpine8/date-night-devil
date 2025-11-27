@@ -2,14 +2,14 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class RestaurantSearchRequest(BaseModel):
     """Request model for restaurant search."""
 
-    location: str = Field(
-        ..., description="Location string (e.g., 'New York, NY') or lat/lng coordinates"
+    location: Optional[str] = Field(
+        None, description="Location string (e.g., 'New York, NY') or lat/lng coordinates"
     )
     cuisine: Optional[str] = Field(
         None, description="Cuisine type filter (e.g., 'italian', 'chinese', 'mexican')"
@@ -38,14 +38,17 @@ class RestaurantSearchRequest(BaseModel):
         min_length=2,
         max_length=2,
     )
+    page_token: Optional[str] = Field(
+        None, description="Token to fetch the next page of results from Google Places API"
+    )
 
     @field_validator("location")
     @classmethod
-    def validate_location(cls, v: str) -> str:
-        """Validate location is not empty."""
-        if not v or not v.strip():
+    def validate_location(cls, v: Optional[str]) -> Optional[str]:
+        """Validate location is not empty if provided."""
+        if v is not None and (not v or not v.strip()):
             raise ValueError("Location cannot be empty")
-        return v.strip()
+        return v.strip() if v else None
 
     @field_validator("country")
     @classmethod
@@ -54,3 +57,10 @@ class RestaurantSearchRequest(BaseModel):
         if v:
             return v.lower()
         return v
+
+    @model_validator(mode="after")
+    def validate_location_or_page_token(self):
+        """Validate that either location or page_token is provided."""
+        if not self.location and not self.page_token:
+            raise ValueError("Either 'location' or 'page_token' must be provided")
+        return self

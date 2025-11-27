@@ -339,6 +339,41 @@ The project uses:
 - **httpx** for async HTTP client
 - **python-dotenv** for environment management
 
+## Deployment
+
+This application consists of two parts that need to be deployed separately:
+
+- **Frontend**: React/Vite app deployed to Vercel
+- **Backend**: FastAPI app deployed to Google Cloud Run
+
+### Quick Start
+
+1. **Deploy Backend (Google Cloud Run)**
+   ```bash
+   # Set environment variables
+   export GOOGLE_CLOUD_PROJECT="your-project-id"
+   export GOOGLE_MAPS_API_KEY="your-api-key"
+   
+   # Deploy
+   ./deploy.sh
+   ```
+
+2. **Deploy Frontend (Vercel)**
+   - Connect your GitHub repo to Vercel
+   - Set root directory to `frontend`
+   - Add environment variable: `VITE_API_BASE_URL=https://your-cloud-run-url.run.app`
+
+### Detailed Instructions
+
+For comprehensive deployment instructions, including:
+- Step-by-step setup for both platforms
+- Environment variable configuration
+- CORS setup
+- Troubleshooting guide
+- Cost estimation
+
+See [DEPLOYMENT.md](DEPLOYMENT.md)
+
 ## License
 
 (Add license information)

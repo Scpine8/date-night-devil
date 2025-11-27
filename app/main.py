@@ -1,5 +1,6 @@
 """Main FastAPI application."""
 
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,14 +48,23 @@ app = FastAPI(
 )
 
 # Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Get allowed origins from environment variable or use defaults for development
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    # Split comma-separated origins from environment variable
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+else:
+    # Default origins for local development
+    allowed_origins = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -183,8 +193,8 @@ async def debug_google_maps():
     description="Search for restaurants in a given location with filters for cuisine, rating, reviews, price level, and open status.",
 )
 async def search_restaurants(
-    location: str = Query(
-        ..., description="Location string (e.g., 'New York, NY') or lat/lng coordinates"
+    location: str | None = Query(
+        None, description="Location string (e.g., 'New York, NY') or lat/lng coordinates. Required unless page_token is provided."
     ),
     cuisine: str | None = Query(
         None, description="Cuisine type filter (e.g., 'italian', 'chinese', 'mexican')"
@@ -213,11 +223,14 @@ async def search_restaurants(
         min_length=2,
         max_length=2,
     ),
+    page_token: str | None = Query(
+        None, description="Token to fetch the next page of results from Google Places API"
+    ),
 ):
     """
     Search for restaurants with advanced filtering options.
 
-    - **location**: Required. Location string or coordinates (e.g., "New York, NY" or "40.7128,-74.0060")
+    - **location**: Required unless page_token is provided. Location string or coordinates (e.g., "New York, NY" or "40.7128,-74.0060")
     - **cuisine**: Optional. Filter by cuisine type
     - **min_rating**: Optional. Minimum average rating (0-5)
     - **min_reviews**: Optional. Minimum number of reviews
@@ -225,6 +238,7 @@ async def search_restaurants(
     - **open_now**: Optional. Only return restaurants currently open
     - **radius**: Optional. Search radius in meters (max 50000)
     - **country**: Optional. ISO 3166-1 Alpha-2 country code to bias search results
+    - **page_token**: Optional. Token to fetch the next page of results
     """
     if not google_maps_service:
         raise HTTPException(
@@ -243,11 +257,12 @@ async def search_restaurants(
             open_now=open_now,
             radius=radius,
             country=country,
+            page_token=page_token,
         )
 
         # Perform search
-        restaurants = await google_maps_service.search_restaurants(
-            location=search_request.location,
+        restaurants, next_page_token = await google_maps_service.search_restaurants(
+            location=search_request.location if search_request.location else None,
             cuisine=search_request.cuisine,
             min_rating=search_request.min_rating,
             min_reviews=search_request.min_reviews,
@@ -255,12 +270,14 @@ async def search_restaurants(
             open_now=search_request.open_now,
             radius=search_request.radius,
             country=search_request.country,
+            page_token=search_request.page_token,
         )
 
         return SearchResponse(
             restaurants=restaurants,
             total_results=len(restaurants),
             query=search_request.model_dump(exclude_none=True),
+            next_page_token=next_page_token,
         )
 
     except ValueError as e:

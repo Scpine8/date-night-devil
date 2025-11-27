@@ -77,10 +77,11 @@ export interface SearchResponse {
   restaurants: Restaurant[];
   total_results: number;
   query: Record<string, unknown>;
+  next_page_token?: string | null;
 }
 
 export interface SearchParams {
-  location: string;
+  location?: string;
   cuisine?: string;
   min_rating?: number;
   min_reviews?: number;
@@ -88,16 +89,23 @@ export interface SearchParams {
   open_now?: boolean;
   radius?: number;
   country?: string;
+  page_token?: string;
 }
 
 export interface UsePlacesAPIReturn {
   fetchPlaces: (params: SearchParams) => Promise<SearchResponse | null>;
+  fetchNextPage: (
+    pageToken: string,
+    originalParams: SearchParams
+  ) => Promise<SearchResponse | null>;
   loading: boolean;
   error: string | null;
   data: SearchResponse | null;
 }
 
-const DEFAULT_API_BASE_URL = "http://localhost:8000";
+// Get API base URL from environment variable (for production) or use default (for development)
+const DEFAULT_API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 /**
  * Custom hook for interacting with the Date Night Devil restaurant search API.
@@ -118,7 +126,12 @@ export function usePlacesAPI(
       try {
         // Build query parameters
         const searchParams = new URLSearchParams();
-        searchParams.append("location", params.location);
+
+        if (params.page_token) {
+          searchParams.append("page_token", params.page_token);
+        } else if (params.location) {
+          searchParams.append("location", params.location);
+        }
 
         if (params.cuisine) {
           searchParams.append("cuisine", params.cuisine);
@@ -137,6 +150,9 @@ export function usePlacesAPI(
         }
         if (params.radius !== undefined) {
           searchParams.append("radius", params.radius.toString());
+        }
+        if (params.country) {
+          searchParams.append("country", params.country);
         }
 
         const url = `${apiBaseUrl}/restaurants/search?${searchParams.toString()}`;
@@ -189,8 +205,22 @@ export function usePlacesAPI(
     [apiBaseUrl]
   );
 
+  const fetchNextPage = useCallback(
+    async (
+      pageToken: string,
+      originalParams: SearchParams
+    ): Promise<SearchResponse | null> => {
+      return fetchPlaces({
+        ...originalParams,
+        page_token: pageToken,
+      });
+    },
+    [fetchPlaces]
+  );
+
   return {
     fetchPlaces,
+    fetchNextPage,
     loading,
     error,
     data,

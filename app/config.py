@@ -15,6 +15,7 @@ class Settings:
     google_maps_api_key: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
 
     # Server Configuration
+    # Cloud Run sets PORT environment variable, default to 8000 for local development
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = int(os.getenv("PORT", "8000"))
 

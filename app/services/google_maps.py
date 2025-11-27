@@ -22,7 +22,7 @@ class GoogleMapsService:
 
     async def search_restaurants(
         self,
-        location: str,
+        location: Optional[str] = None,
         cuisine: Optional[str] = None,
         min_rating: Optional[float] = None,
         min_reviews: Optional[int] = None,
@@ -30,12 +30,13 @@ class GoogleMapsService:
         open_now: Optional[bool] = None,
         radius: Optional[int] = None,
         country: Optional[str] = None,
-    ) -> list[Restaurant]:
+        page_token: Optional[str] = None,
+    ) -> tuple[list[Restaurant], Optional[str]]:
         """
         Search for restaurants using Google Places API Text Search.
 
         Args:
-            location: Location string or coordinates
+            location: Location string or coordinates (required if page_token is not provided)
             cuisine: Optional cuisine type filter
             min_rating: Optional minimum rating filter
             min_reviews: Optional minimum number of reviews filter
@@ -43,32 +44,40 @@ class GoogleMapsService:
             open_now: Optional filter for currently open restaurants
             radius: Optional search radius in meters
             country: Optional ISO 3166-1 Alpha-2 country code to bias results
+            page_token: Optional pagination token to fetch next page of results
 
         Returns:
-            List of Restaurant objects matching the criteria
+            Tuple of (list of Restaurant objects matching the criteria, next_page_token if available)
         """
-        # Build the query string
-        query_parts = ["restaurant"]
-        if cuisine:
-            query_parts.append(cuisine)
-        query_parts.append(f"in {location}")
-        query = " ".join(query_parts)
-
         # Prepare API request parameters
         params = {
-            "query": query,
             "key": self.api_key,
-            "type": "restaurant",
         }
 
-        if radius:
-            params["radius"] = str(radius)
+        # If page_token is provided, use it for pagination (don't include query/location params)
+        if page_token:
+            params["pagetoken"] = page_token
+        else:
+            # Build the query string for initial search
+            if not location:
+                raise ValueError("Location is required when page_token is not provided")
+            query_parts = ["restaurant"]
+            if cuisine:
+                query_parts.append(cuisine)
+            query_parts.append(f"in {location}")
+            query = " ".join(query_parts)
 
-        if open_now:
-            params["opennow"] = "true"
+            params["query"] = query
+            params["type"] = "restaurant"
 
-        if country:
-            params["region"] = country.lower()
+            if radius:
+                params["radius"] = str(radius)
+
+            if open_now:
+                params["opennow"] = "true"
+
+            if country:
+                params["region"] = country.lower()
 
         try:
             # Make the API call
@@ -127,7 +136,8 @@ class GoogleMapsService:
                 for place in data["results"]:
                     restaurant = self._parse_place_result(place)
 
-                    # Apply filters
+                    # Always apply filters (application-level filters like min_rating, min_reviews, price_level
+                    # are not supported by Google Places API, so we filter client-side)
                     if self._matches_filters(
                         restaurant,
                         min_rating=min_rating,
@@ -140,7 +150,10 @@ class GoogleMapsService:
             if restaurants and open_now:
                 restaurants = await self._filter_open_now(restaurants)
 
-            return restaurants
+            # Extract next_page_token from response
+            next_page_token = data.get("next_page_token")
+
+            return restaurants, next_page_token
 
         except httpx.HTTPStatusError as e:
             raise GoogleMapsAPIError(f"HTTP error calling Google Maps API: {e}")
