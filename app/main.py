@@ -1,10 +1,13 @@
 """Main FastAPI application."""
 
 import os
+import re
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 from app.config import settings
 from app.exceptions import (
@@ -52,23 +55,55 @@ app = FastAPI(
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
 if allowed_origins_env:
     # Split comma-separated origins from environment variable
-    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+    allowed_origins_list = [origin.strip() for origin in allowed_origins_env.split(",")]
 else:
     # Default origins for local development
-    allowed_origins = [
+    allowed_origins_list = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
     ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+def is_origin_allowed(origin: str) -> bool:
+    """Check if origin is allowed, including Vercel preview domains."""
+    if not origin:
+        return False
+    # Check exact matches
+    if origin in allowed_origins_list:
+        return True
+    # Allow all Vercel domains (for preview deployments)
+    if re.match(r"^https://.*\.vercel\.app$", origin):
+        return True
+    return False
+
+
+# Custom CORS middleware to properly handle Vercel preview domains
+class VercelCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        origin = request.headers.get("origin")
+        
+        # Handle preflight OPTIONS requests
+        if request.method == "OPTIONS":
+            response = JSONResponse(content={})
+            if origin and is_origin_allowed(origin):
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+                response.headers["Access-Control-Allow-Headers"] = "*"
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Max-Age"] = "3600"
+            return response
+        
+        # Handle actual requests
+        response = await call_next(request)
+        if origin and is_origin_allowed(origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
+
+
+app.add_middleware(VercelCORSMiddleware)
 
 
 @app.exception_handler(RestaurantSearchException)

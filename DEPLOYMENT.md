@@ -39,9 +39,9 @@ This guide covers deploying both the frontend (Vercel) and backend (Google Cloud
 3. **Configure Build Settings**
 
    - Framework Preset: Vite
-   - Build Command: `npm run build` (or `yarn build`)
+   - Build Command: `yarn build`
    - Output Directory: `dist`
-   - Install Command: `npm install` (or `yarn install`)
+   - Install Command: `yarn install`
 
 4. **Set Environment Variables**
 

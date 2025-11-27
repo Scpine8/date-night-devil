@@ -40,3 +40,6 @@ clean: ## Clean Python cache files
 setup: install ## Install dependencies and setup project
 	@echo "Project setup complete!"
 
+deploy: ## Deploy the project
+	./deploy.sh
+

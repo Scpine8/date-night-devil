@@ -349,11 +349,12 @@ This application consists of two parts that need to be deployed separately:
 ### Quick Start
 
 1. **Deploy Backend (Google Cloud Run)**
+
    ```bash
    # Set environment variables
    export GOOGLE_CLOUD_PROJECT="your-project-id"
    export GOOGLE_MAPS_API_KEY="your-api-key"
-   
+
    # Deploy
    ./deploy.sh
    ```
@@ -361,11 +362,16 @@ This application consists of two parts that need to be deployed separately:
 2. **Deploy Frontend (Vercel)**
    - Connect your GitHub repo to Vercel
    - Set root directory to `frontend`
-   - Add environment variable: `VITE_API_BASE_URL=https://your-cloud-run-url.run.app`
+   - Add environment variable: `VITE_API_BASE_URL=https://date-night-devil-api-xigduunerq-uc.a.run.app`
+
+### Useful URLs
+
+- Double Date Devil G Cloud Dashboard: `https://console.cloud.google.com/home/dashboard?project=double-date-devil`
 
 ### Detailed Instructions
 
 For comprehensive deployment instructions, including:
+
 - Step-by-step setup for both platforms
 - Environment variable configuration
 - CORS setup
